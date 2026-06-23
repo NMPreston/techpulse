@@ -46,5 +46,6 @@ export async function fetchHackerNewsArticles(): Promise<Article[]> {
       publishedAt: new Date(s.time * 1000).toISOString(),
       commentCount: s.descendants || 0,
       tags: extractTags(s.title),
-    }));
+    }))
+    .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
 }
