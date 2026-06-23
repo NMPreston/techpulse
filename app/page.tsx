@@ -1,23 +1,10 @@
 import ArticleCard from "@/components/ArticleCard";
-import type { Article } from "@/lib/types";
+import { fetchHackerNewsArticles } from "@/lib/sources/hn";
 
-async function getArticles(): Promise<Article[]> {
-  // In production, use the Vercel URL; locally, use localhost
-  const baseUrl = process.env.VERCEL_URL
-    ? `https://${process.env.VERCEL_URL}`
-    : "http://localhost:3000";
-
-  const res = await fetch(`${baseUrl}/api/feed/hn`, {
-    next: { revalidate: 600 },
-  });
-
-  if (!res.ok) return [];
-  const data = await res.json();
-  return data.articles || [];
-}
+export const revalidate = 600; // Re-fetch every 10 minutes
 
 export default async function FeedPage() {
-  const articles = await getArticles();
+  const articles = await fetchHackerNewsArticles();
 
   return (
     <div>
