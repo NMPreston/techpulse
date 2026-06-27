@@ -16,9 +16,10 @@ export interface Article {
   source: string;
   score: number;
   author: string;
-  publishedAt: string; // ISO date string
+  publishedAt: string;
   commentCount: number;
   tags: string[];
+  summary?: string; 
 }
 
 export interface ArxivEntry {

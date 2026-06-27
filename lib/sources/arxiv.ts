@@ -35,6 +35,12 @@ function getCategoryTags(entry: ArxivEntry): string[] {
   return [entry.category["@_term"]];
 }
 
+function trimSummary(text: string): string {
+  const cleaned = String(text).replace(/\s+/g, " ").trim();
+  if (cleaned.length <= 500) return cleaned;
+  return cleaned.slice(0, 500).trimEnd() + "…";
+}
+
 export async function fetchArxivPapers(): Promise<Article[]> {
   try {
     const url = buildQuery();
@@ -65,6 +71,7 @@ export async function fetchArxivPapers(): Promise<Article[]> {
       publishedAt: entry.published,
       commentCount: 0,
       tags: getCategoryTags(entry),
+      summary: trimSummary(entry.summary),
     }));
   } catch (error) {
     console.error("arXiv fetch error:", error);
