@@ -19,7 +19,10 @@ export interface Article {
   publishedAt: string;
   commentCount: number;
   tags: string[];
-  summary?: string; 
+  summary?: string;
+  aiSummary?: string;
+  saved?: boolean;     
+  read?: boolean;      
 }
 
 export interface ArxivEntry {
