@@ -26,14 +26,49 @@ export default function ArticleCard({
   );
   const [loading, setLoading] = useState(false);
   const [fetched, setFetched] = useState(Boolean(article.summary));
+
   const [saved, setSaved] = useState(Boolean(article.saved));
   const [savingBusy, setSavingBusy] = useState(false);
 
+  const [read, setRead] = useState(Boolean(article.read));
+
   const isArxiv = article.source === "arXiv";
+
+  async function markAsRead() {
+    if (read) return;
+
+    setRead(true);
+
+    try {
+      const response = await fetch("/api/articles/read", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          id: article.id,
+          read: true,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(
+          `Read-state request failed: ${response.status}`
+        );
+      }
+    } catch (error) {
+      console.error("Failed to mark article as read:", error);
+      setRead(false);
+    }
+  }
 
   async function handleToggle() {
     const nextExpanded = !expanded;
     setExpanded(nextExpanded);
+
+    if (nextExpanded) {
+      void markAsRead();
+    }
 
     if (nextExpanded && !fetched && !isArxiv) {
       setLoading(true);
@@ -44,13 +79,20 @@ export default function ArticleCard({
         );
 
         if (!response.ok) {
-          throw new Error(`Preview request failed: ${response.status}`);
+          throw new Error(
+            `Preview request failed: ${response.status}`
+          );
         }
 
-        const data: { description?: string } = await response.json();
+        const data: { description?: string } =
+          await response.json();
+
         setPreview(data.description || null);
       } catch (error) {
-        console.error("Failed to load article preview:", error);
+        console.error(
+          "Failed to load article preview:",
+          error
+        );
         setPreview(null);
       } finally {
         setLoading(false);
@@ -59,7 +101,9 @@ export default function ArticleCard({
     }
   }
 
-  async function handleSave(event: MouseEvent<HTMLButtonElement>) {
+  async function handleSave(
+    event: MouseEvent<HTMLButtonElement>
+  ) {
     event.stopPropagation();
 
     const nextSaved = !saved;
@@ -79,10 +123,15 @@ export default function ArticleCard({
       });
 
       if (!response.ok) {
-        throw new Error(`Save request failed: ${response.status}`);
+        throw new Error(
+          `Save request failed: ${response.status}`
+        );
       }
     } catch (error) {
-      console.error("Failed to update saved article:", error);
+      console.error(
+        "Failed to update saved article:",
+        error
+      );
       setSaved(!nextSaved);
     } finally {
       setSavingBusy(false);
@@ -93,7 +142,11 @@ export default function ArticleCard({
   const starChar = saved ? "\u2605" : "\u2606";
 
   return (
-    <article className="mb-2 rounded-xl border border-zinc-800 bg-zinc-900 p-4 transition-colors hover:border-zinc-700">
+    <article
+      className={`mb-2 rounded-xl border border-zinc-800 bg-zinc-900 p-4 transition-all hover:border-zinc-700 ${
+        read ? "opacity-60" : "opacity-100"
+      }`}
+    >
       <div className="flex items-start justify-between gap-3">
         <button
           type="button"
@@ -115,7 +168,16 @@ export default function ArticleCard({
                 <span>·</span>
                 <span>{article.score} pts</span>
                 <span>·</span>
-                <span>{article.commentCount} comments</span>
+                <span>
+                  {article.commentCount} comments
+                </span>
+              </>
+            ) : null}
+
+            {read ? (
+              <>
+                <span>·</span>
+                <span className="text-zinc-600">Read</span>
               </>
             ) : null}
           </div>

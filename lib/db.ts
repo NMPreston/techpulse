@@ -145,5 +145,22 @@ export async function setSaved(
 
   if (error) {
     console.error("setSaved error:", error);
+    throw error;
+  }
+}
+
+// Mark an article as read or unread.
+export async function setRead(
+  id: string,
+  read: boolean
+): Promise<void> {
+  const { error } = await supabase
+    .from("articles")
+    .update({ read })
+    .eq("id", id);
+
+  if (error) {
+    console.error("setRead error:", error);
+    throw error;
   }
 }
