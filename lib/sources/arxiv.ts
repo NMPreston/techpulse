@@ -41,18 +41,27 @@ function trimSummary(text: string): string {
   return cleaned.slice(0, 500).trimEnd() + "…";
 }
 
-export async function fetchArxivPapers(): Promise<Article[]> {
+export async function fetchArxivPapers(
+  { throwOnError = false }: { throwOnError?: boolean } = {}
+): Promise<Article[]> {
   try {
     const url = buildQuery();
     const res = await fetch(url, {
       next: { revalidate: 600 },
       headers: { "User-Agent": "TechPulse/1.0 (personal project)" },
+      signal: AbortSignal.timeout(15_000),
     });
+    if (!res.ok) {
+      throw new Error(`arXiv request failed: ${res.status}`);
+    }
 
     const xml = await res.text();
 
     const parser = new XMLParser({ ignoreAttributes: false });
     const parsed = parser.parse(xml);
+    if (!parsed?.feed) {
+      throw new Error("arXiv returned an invalid feed or API error");
+    }
 
     const entries = parsed?.feed?.entry;
     if (!entries) {
@@ -60,6 +69,9 @@ export async function fetchArxivPapers(): Promise<Article[]> {
     }
 
     const entryList: ArxivEntry[] = Array.isArray(entries) ? entries : [entries];
+    if (entryList.some((entry) => String(entry.id).startsWith("http://arxiv.org/api/errors"))) {
+      throw new Error("arXiv returned an API error");
+    }
 
     return entryList.map((entry) => ({
       id: `arxiv-${String(entry.id).split("/abs/")[1] || entry.id}`,
@@ -75,6 +87,7 @@ export async function fetchArxivPapers(): Promise<Article[]> {
     }));
   } catch (error) {
     console.error("arXiv fetch error:", error);
+    if (throwOnError) throw error;
     return [];
   }
 }

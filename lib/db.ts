@@ -53,23 +53,27 @@ function fromRow(row: ArticleRow): Article {
 }
 
 // Insert new articles while preserving saved/read state and cached summaries.
+// Return newly inserted rows (duplicates excluded), or null on storage failure.
 export async function storeArticles(
   articles: Article[]
-): Promise<void> {
-  if (articles.length === 0) return;
+): Promise<number | null> {
+  if (articles.length === 0) return 0;
 
   const rows = articles.map(toRow);
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("articles")
     .upsert(rows, {
       onConflict: "id",
       ignoreDuplicates: true,
-    });
+    })
+    .select("id");
 
   if (error) {
     console.error("storeArticles error:", error);
+    return null;
   }
+  return data?.length ?? 0;
 }
 
 // Fetch stored state for a collection of article IDs.

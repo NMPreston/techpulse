@@ -23,13 +23,23 @@ function extractTags(title: string): string[] {
 export async function fetchHackerNewsArticles(): Promise<Article[]> {
   const topRes = await fetch(`${HN_BASE}/topstories.json`, {
     next: { revalidate: 600 },
+    signal: AbortSignal.timeout(15_000),
   });
+  if (!topRes.ok) {
+    throw new Error(`Hacker News top stories request failed: ${topRes.status}`);
+  }
   const ids: number[] = await topRes.json();
 
   const storyPromises = ids.slice(0, 50).map((id) =>
-    fetch(`${HN_BASE}/item/${id}.json`, { next: { revalidate: 600 } }).then(
-      (r) => r.json() as Promise<HNStory>
-    )
+    fetch(`${HN_BASE}/item/${id}.json`, {
+      next: { revalidate: 600 },
+      signal: AbortSignal.timeout(15_000),
+    }).then((response) => {
+      if (!response.ok) {
+        throw new Error(`Hacker News item ${id} request failed: ${response.status}`);
+      }
+      return response.json() as Promise<HNStory>;
+    })
   );
   const stories = await Promise.all(storyPromises);
 
